@@ -7,7 +7,6 @@ Created on Tue Aug 17 23:25:37 2021
 
 import torch
 import torch.nn.functional as F
-USE_GPU=True
 
 
 class TextCNN(torch.nn.Module):
@@ -37,10 +36,3 @@ class TextCNN(torch.nn.Module):
         logits = self.fc(x)
         return logits
         
-
-    #判断是否放到显卡上
-    def create_tensor(self,t):
-        if USE_GPU:
-            device=torch.device('cuda:0')
-            t=t.to(device)
-        return t 

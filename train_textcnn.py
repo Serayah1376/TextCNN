@@ -19,10 +19,10 @@ class Train_Valid():
         self.trainset=trainset
         self.validset=validset
         self.testset=testset
-        #self.gamma=0.95
+        self.gamma=0.1
         self.criterion=torch.nn.CrossEntropyLoss()
         self.optimizer=torch.optim.Adam(self.model.parameters(),lr=0.001)
-        #self.scheduler=torch.optim.lr_scheduler.ExponentialLR(self.optimizer,self.gamma, last_epoch=-1)
+        self.scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='max', factor=0.1, patience=10, verbose=False, threshold=0.0001, threshold_mode='rel', cooldown=0, min_lr=0, eps=1e-08)
         
 
     def train(self):
@@ -32,7 +32,7 @@ class Train_Valid():
         loss_list=[]
         #min_loss=100  #初始化一个最小损失值
         best_acc=0
-        for epoch in range(1,21): 
+        for epoch in range(1,26): 
             total_loss=0
             for i,(inputs,target) in enumerate(self.trainloader,1):
                 self.optimizer.zero_grad()
@@ -43,11 +43,11 @@ class Train_Valid():
                 #self.scheduler.step()
             
                 total_loss+=loss.item()
-                if i%200==0:
+                if i%100==0:
                     print(f'[{self.time_since(self.start)}] Epoch {epoch}',end='')
                     print(f'[{i * len(inputs)}/{len(self.trainset)}]',end='')
                     print(f'loss={total_loss/(i*len(inputs))}')
-               
+            #self.scheduler.step()   
             '''
             #如果出现损失值的最新低值，则保存网络模型
             if (total_loss/len(trainset))<min_loss:
@@ -58,12 +58,13 @@ class Train_Valid():
             loss_list.append(total_loss/len(self.trainset))
             #训练一轮的结束进行一次验证，获取准确率
             valid_acc=self.valid(epoch)
+            self.scheduler.step(valid_acc) 
             test_acc=self.test(epoch)
             
             #保存效果最好的模型
             if test_acc>best_acc:
                 best_acc=test_acc
-                torch.save(self.model, 'C:/Users/10983/py入门/GRUClassifier/best_model')
+                torch.save(self.model, 'C:/Users/10983/py入门/TextCNN/TextCNN_best_model')
                 
             valid_acc_list.append(valid_acc)
             test_acc_list.append(test_acc)
@@ -84,7 +85,7 @@ class Train_Valid():
                 correct+=pred.eq(target.view_as(pred)).sum().item()
                 
                 valid_total_loss+=valid_loss.item()
-                if i%50==0:
+                if i%20==0:
                     print(f'[{self.time_since(self.start)}] Epoch {epoch}',end='')
                     print(f'[{i * len(inputs)}/{len(self.validset)}]',end='')
                     print(f'valid_loss={valid_total_loss/(i*len(inputs))}')
@@ -108,7 +109,7 @@ class Train_Valid():
                 correct+=pred.eq(target.view_as(pred)).sum().item()
                 
                 test_total_loss+=test_loss.item()
-                if i%50==0:
+                if i%20==0:
                     print(f'[{self.time_since(self.start)}] Epoch {epoch}',end='')
                     print(f'[{i * len(inputs)}/{len(self.testset)}]',end='')
                     print(f'test_loss={test_total_loss/(i*len(inputs))}')
